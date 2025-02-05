@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/utils/supabase/client";
+import { Device } from "./columns";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -27,10 +29,52 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({
   columns,
-  data,
+  data: initialData,
 }: DataTableProps<TData, TValue>) {
+  const [data, setData] = useState<TData[]>(initialData);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const supabase = createClient();
+
+  useEffect(() => {
+    // Cihazların durumunu periyodik olarak kontrol et
+    const interval = setInterval(async () => {
+      const { data: devices } = await supabase
+        .from("devices")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (devices) {
+        setData(devices as TData[]);
+      }
+    }, 5000); // Her 5 saniyede bir güncelle
+
+    // Gerçek zamanlı güncellemeleri dinle
+    const channel = supabase
+      .channel("device-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "devices" },
+        (payload) => {
+          // Cihaz verilerini yeniden yükle
+          supabase
+            .from("devices")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .then(({ data: devices }) => {
+              if (devices) {
+                setData(devices as TData[]);
+              }
+            });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const table = useReactTable({
     data,

@@ -21,7 +21,7 @@ export default async function DevicesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Cihaz Yönetimi</h1>
         <Button asChild>
-          <Link href="/protected/dashboard/devices/new">Yeni Cihaz Ekle</Link>
+          <Link href="/protected/devices/new">Yeni Cihaz Ekle</Link>
         </Button>
       </div>
       <DataTable columns={columns} data={devices || []} />

@@ -5,8 +5,10 @@ import {
   getCoreRowModel,
   useReactTable,
   getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
 } from "@tanstack/react-table";
-
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -16,25 +18,49 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  loading?: boolean;
+  onDelete?: () => void;
+}
+
+interface CustomTableMeta<TData> {
+  onDelete?: () => void;
+}
+
+declare module "@tanstack/react-table" {
+  interface TableMeta<TData> extends CustomTableMeta<TData> {}
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  loading,
+  onDelete,
 }: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    meta: {
+      onDelete: onDelete,
+    },
   });
 
   return (
     <div>
+      <div className="flex items-center py-4"></div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -56,7 +82,19 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin h-5 w-5 border-2 border-primary rounded-full border-t-transparent" />
+                    Yükleniyor...
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
@@ -91,6 +129,12 @@ export function DataTable<TData, TValue>({
         >
           Önceki
         </Button>
+        <span className="flex items-center gap-1">
+          <div>Sayfa</div>
+          <strong>
+            {table.getState().pagination.pageIndex + 1}/ {table.getPageCount()}
+          </strong>
+        </span>
         <Button
           variant="outline"
           size="sm"

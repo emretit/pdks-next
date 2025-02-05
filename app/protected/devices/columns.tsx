@@ -17,6 +17,7 @@ export type Device = {
   device_ssl: string;
   host_address: string;
   updated_at: string;
+  last_seen?: string;
 };
 
 export const columns: ColumnDef<Device>[] = [
@@ -55,12 +56,19 @@ export const columns: ColumnDef<Device>[] = [
     header: "Durum",
     cell: ({ row }) => {
       const status = row.getValue("status");
-      const statusMap: Record<string, string> = {
-        active: "🟢 Aktif",
-        inactive: "🔴 Pasif",
-        maintenance: "🟡 Bakımda",
-      };
-      return <span>{statusMap[status as string] ?? status}</span>;
+      const isOnline = row.original.last_seen
+        ? new Date().getTime() - new Date(row.original.last_seen).getTime() <
+          30000 // Son 30 saniye içinde
+        : false;
+
+      return (
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}
+          />
+          <span>{isOnline ? "Çevrimiçi" : "Çevrimdışı"}</span>
+        </div>
+      );
     },
   },
   {
@@ -69,6 +77,16 @@ export const columns: ColumnDef<Device>[] = [
     cell: ({ row }) => {
       const date = new Date(row.getValue("created_at"));
       return date.toLocaleDateString("tr-TR");
+    },
+  },
+  {
+    accessorKey: "last_seen",
+    header: "Son Görülme",
+    cell: ({ row }) => {
+      const last_seen = row.getValue("last_seen");
+      if (!last_seen) return "Hiç bağlanmadı";
+
+      return new Date(last_seen as string).toLocaleString("tr-TR");
     },
   },
 ];

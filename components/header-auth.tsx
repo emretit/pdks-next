@@ -1,70 +1,118 @@
-import { signOutAction } from "@/app/actions";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import Link from "next/link";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
 import { createClient } from "@/utils/supabase/server";
+import { Button } from "./ui/button";
 
-export default async function AuthButton() {
+export default async function Header() {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!hasEnvVars) {
-    return (
-      <>
-        <div className="flex gap-4 items-center">
-          <div>
-            <Badge
-              variant={"default"}
-              className="font-normal pointer-events-none"
-            >
-              Please update .env.local file with anon key and url
-            </Badge>
+  return (
+    <header className="w-full bg-primary shadow-lg">
+      <nav className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo ve Başlık */}
+          <div className="flex items-center space-x-4">
+            <img
+              src="/ngs-logo.png"
+              alt="NGS Logo"
+              className="h-14 w-auto mr-4 object-contain transition-transform hover:scale-105"
+            />
+            <h1 className="text-white text-2xl font-bold tracking-tight">
+              NGS PDKS
+              <span className="block text-sm font-normal mt-1">
+                Personel Devam Kontrol Sistemi
+              </span>
+            </h1>
           </div>
-          <div className="flex gap-2">
-            <Button
-              asChild
-              size="sm"
-              variant={"outline"}
-              disabled
-              className="opacity-75 cursor-none pointer-events-none"
-            >
-              <Link href="/sign-in">Sign in</Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              variant={"default"}
-              disabled
-              className="opacity-75 cursor-none pointer-events-none"
-            >
-              <Link href="/sign-up">Sign up</Link>
-            </Button>
+
+          {/* Ana Navigasyon */}
+          <ul className="hidden lg:flex items-center space-x-6">
+            <li>
+              <Link
+                href="/protected/dashboard"
+                className="text-white hover:text-gray-200 transition-colors font-medium"
+              >
+                Ana Sayfa
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/protected/devices"
+                className="text-white hover:text-gray-200 transition-colors font-medium"
+              >
+                Cihazlar
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/protected/employees"
+                className="text-white hover:text-gray-200 transition-colors font-medium"
+              >
+                Çalışanlar
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/protected/card-reads"
+                className="text-white hover:text-gray-200 transition-colors font-medium"
+              >
+                Geçiş Kontrol
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/protected/pdks-management"
+                className="text-white hover:text-gray-200 transition-colors font-medium"
+              >
+                PDKS Yönetimi
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/protected/admin"
+                className="text-white hover:text-gray-200 transition-colors font-medium"
+              >
+                Yönetim Paneli
+              </Link>
+            </li>
+          </ul>
+
+          {/* Kullanıcı Menüsü */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-white">{user.email}</span>
+                <form action="/auth/sign-out" method="post">
+                  <Button
+                    variant="outline"
+                    className="text-white border-white hover:bg-white/10"
+                  >
+                    Çıkış Yap
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="text-white border-white hover:bg-white/10"
+                >
+                  <Link href="/sign-in">Giriş Yap</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="bg-white text-primary hover:bg-white/90"
+                >
+                  <Link href="/sign-up">Kayıt Ol</Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-      </>
-    );
-  }
-  return user ? (
-    <div className="flex items-center gap-4">
-      Hey, {user.email}!
-      <form action={signOutAction}>
-        <Button type="submit" variant={"outline"}>
-          Sign out
-        </Button>
-      </form>
-    </div>
-  ) : (
-    <div className="flex gap-2">
-      <Button asChild size="sm" variant={"outline"}>
-        <Link href="/sign-in">Sign in</Link>
-      </Button>
-      <Button asChild size="sm" variant={"default"}>
-        <Link href="/sign-up">Sign up</Link>
-      </Button>
-    </div>
+      </nav>
+    </header>
   );
 }
