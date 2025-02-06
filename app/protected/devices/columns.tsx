@@ -10,14 +10,14 @@ export type Device = {
   ip_address: string;
   location: string;
   status: string;
-  created_at: string;
-  serial_number: string;
-  model: string;
+  device_id: string;
+  host_address: string;
   protocol: string;
   device_ssl: string;
-  host_address: string;
+  last_seen: string;
+  created_at: string;
   updated_at: string;
-  last_seen?: string;
+  server_device_id: number;
 };
 
 export const columns: ColumnDef<Device>[] = [
