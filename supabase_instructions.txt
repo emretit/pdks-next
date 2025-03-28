@@ -1,0 +1,19 @@
+Veritabanı sorununu çözmek için aşağıdaki adımları izleyin:
+
+1. Supabase yönetim panelinize giriş yapın (https://app.supabase.com)
+2. Projenizi seçin
+3. Sol menüden "Table Editor" sekmesine tıklayın
+4. "server_devices" tablosunu bulun ve seçin
+5. "Edit" düğmesine tıklayın
+6. "Add Column" (Sütun Ekle) düğmesine tıklayın
+7. Aşağıdaki bilgileri girin:
+   - Name: last_request_time
+   - Data Type: timestamp with time zone
+   - Default Value: now()
+8. "Save" düğmesine tıklayın
+
+Alternatif olarak SQL Editor kullanarak:
+1. Sol menüden "SQL Editor" sekmesine tıklayın
+2. Yeni bir sorgu oluşturun
+3. Aşağıdaki SQL kodunu yapıştırın ve çalıştırın:
+   ALTER TABLE public.server_devices ADD COLUMN IF NOT EXISTS last_request_time TIMESTAMP WITH TIME ZONE DEFAULT NOW();

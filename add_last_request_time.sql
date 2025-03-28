@@ -1,0 +1,1 @@
+ALTER TABLE public.server_devices ADD COLUMN IF NOT EXISTS last_request_time TIMESTAMP WITH TIME ZONE DEFAULT NOW();

@@ -8,10 +8,11 @@ export type CardRead = {
   created_at: string;
   employee_name: string | null;
   status: string;
-  employees?: {
-    first_name: string;
-    last_name: string;
-  }[];
+  device_id: number;
+  device: {
+    name: string;
+    location: string;
+  } | null;
 };
 
 export const columns: ColumnDef<CardRead>[] = [
@@ -29,10 +30,16 @@ export const columns: ColumnDef<CardRead>[] = [
   {
     accessorKey: "device.name",
     header: "Cihaz Adı",
+    cell: ({ row }) => {
+      return row.original.device?.name || "Bilinmeyen Cihaz";
+    },
   },
   {
     accessorKey: "device.location",
     header: "Konum",
+    cell: ({ row }) => {
+      return row.original.device?.location || "-";
+    },
   },
   {
     accessorKey: "created_at",

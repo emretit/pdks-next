@@ -2,90 +2,78 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface ServerDevice {
+interface Project {
   id: number;
   name: string;
-  ip_address: string;
-  device_id: string;
-  location: string;
-  device_type: string;
-  status: string;
 }
 
-export default function ScanDevicesPage() {
+export default function AddDevicePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [serverDevices, setServerDevices] = useState<ServerDevice[]>([]);
-  const [selectedDevices, setSelectedDevices] = useState<number[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [deviceData, setDeviceData] = useState({
+    name: "",
+    device_id: "",
+    location: "",
+    device_type: "",
+    status: "active",
+    project_id: "",
+  });
   const supabase = createClient();
 
-  const scanDevices = async () => {
-    setScanning(true);
-    try {
-      const { data, error } = await supabase
-        .from("server_devices")
+  useEffect(() => {
+    // Projeleri yükle
+    const loadProjects = async () => {
+      const { data: projectsData } = await supabase
+        .from("projects")
         .select("*")
-        .eq("status", "online");
+        .eq("is_active", true);
 
-      if (error) throw error;
-      setServerDevices(data || []);
-    } catch (error) {
-      console.error("Cihazlar taranırken hata:", error);
-      alert("Cihazlar taranırken bir hata oluştu.");
-    } finally {
-      setScanning(false);
+      if (projectsData) {
+        setProjects(projectsData);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deviceData.project_id) {
+      alert("Lütfen bir proje seçin");
+      return;
     }
-  };
 
-  const handleDeviceSelect = (deviceId: number) => {
-    setSelectedDevices((prev) =>
-      prev.includes(deviceId)
-        ? prev.filter((id) => id !== deviceId)
-        : [...prev, deviceId]
-    );
-  };
-
-  const handleAddDevices = async () => {
     setLoading(true);
     try {
-      const selectedDeviceData = serverDevices.filter((device) =>
-        selectedDevices.includes(device.id)
-      );
-
-      const devicesToAdd = selectedDeviceData.map((device) => ({
-        name: device.name,
-        ip_address: device.ip_address,
-        location: device.location,
-        model: device.device_type,
-        serial_number: device.device_id,
-        status: "active",
-        device_id: device.device_id,
-      }));
-
-      const { error } = await supabase.from("devices").insert(devicesToAdd);
+      const { error } = await supabase.from("devices").insert([
+        {
+          ...deviceData,
+          project_id: parseInt(deviceData.project_id),
+        },
+      ]);
 
       if (error) throw error;
 
       router.push("/protected/devices");
       router.refresh();
     } catch (error) {
-      console.error("Cihazlar eklenirken hata:", error);
-      alert("Cihazlar eklenirken bir hata oluştu.");
+      console.error("Cihaz eklenirken hata:", error);
+      alert("Cihaz eklenirken bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -93,71 +81,96 @@ export default function ScanDevicesPage() {
 
   return (
     <div className="container mx-auto py-10">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/protected/devices">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Cihaz Tara</h1>
+          <h1 className="text-2xl font-bold">Yeni Cihaz Ekle</h1>
         </div>
 
-        <div className="flex justify-between items-center mb-4">
-          <Button onClick={scanDevices} disabled={scanning}>
-            {scanning ? "Taranıyor..." : "Cihazları Tara"}
-          </Button>
-          <Button
-            onClick={handleAddDevices}
-            disabled={loading || selectedDevices.length === 0}
-          >
-            {loading ? "Ekleniyor..." : "Seçili Cihazları Ekle"}
-          </Button>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="project">Proje</Label>
+            <Select
+              value={deviceData.project_id}
+              onValueChange={(value) =>
+                setDeviceData((prev) => ({ ...prev, project_id: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Proje seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id.toString()}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">Seç</TableHead>
-                <TableHead>Cihaz Adı</TableHead>
-                <TableHead>IP Adresi</TableHead>
-                <TableHead>Konum</TableHead>
-                <TableHead>Tip</TableHead>
-                <TableHead>Durum</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {serverDevices.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center">
-                    Henüz cihaz taraması yapılmadı.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                serverDevices.map((device) => (
-                  <TableRow key={device.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedDevices.includes(device.id)}
-                        onCheckedChange={() => handleDeviceSelect(device.id)}
-                      />
-                    </TableCell>
-                    <TableCell>{device.name}</TableCell>
-                    <TableCell>{device.ip_address}</TableCell>
-                    <TableCell>{device.location}</TableCell>
-                    <TableCell>{device.device_type}</TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                        {device.status}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+          <div>
+            <Label htmlFor="name">Cihaz Adı</Label>
+            <Input
+              id="name"
+              value={deviceData.name}
+              onChange={(e) =>
+                setDeviceData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="device_id">Cihaz ID</Label>
+            <Input
+              id="device_id"
+              value={deviceData.device_id}
+              onChange={(e) =>
+                setDeviceData((prev) => ({
+                  ...prev,
+                  device_id: e.target.value,
+                }))
+              }
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="location">Konum</Label>
+            <Input
+              id="location"
+              value={deviceData.location}
+              onChange={(e) =>
+                setDeviceData((prev) => ({ ...prev, location: e.target.value }))
+              }
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="device_type">Cihaz Tipi</Label>
+            <Input
+              id="device_type"
+              value={deviceData.device_type}
+              onChange={(e) =>
+                setDeviceData((prev) => ({
+                  ...prev,
+                  device_type: e.target.value,
+                }))
+              }
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Ekleniyor..." : "Cihazı Ekle"}
+          </Button>
+        </form>
       </div>
     </div>
   );

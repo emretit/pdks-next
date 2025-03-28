@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { DataTable } from "./data-table";
@@ -11,11 +12,15 @@ import { columns } from "./columns";
 export default function ServerDevicesPage() {
   const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchDevices = async () => {
       try {
+        const supabase = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+
         const { data, error } = await supabase
           .from("server_devices")
           .select("*")
@@ -32,7 +37,8 @@ export default function ServerDevicesPage() {
 
     fetchDevices();
 
-    // Realtime subscription
+    // Realtime subscription için normal client kullan
+    const supabase = createClient();
     const channel = supabase
       .channel("server_devices_changes")
       .on(

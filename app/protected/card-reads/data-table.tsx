@@ -48,15 +48,26 @@ export function DataTable<TData, TValue>({
               created_at,
               employee_name,
               status,
-              device:devices!card_readings_device_id_fkey(name, location),
-              employee:employees!fk_card_readings_card_no(first_name, last_name)
+              device_id,
+              server_device:server_devices(name, ip_address)
             `
             )
             .eq("id", payload.new.id)
             .single();
 
           if (newRecord) {
-            setRealTimeData((prev) => [newRecord as TData, ...prev]);
+            const formattedRecord = {
+              ...newRecord,
+              device: newRecord.server_device
+                ? {
+                    name:
+                      newRecord.server_device.name ||
+                      `Cihaz-${newRecord.server_device.ip_address}`,
+                    location: newRecord.server_device.ip_address,
+                  }
+                : null,
+            };
+            setRealTimeData((prev) => [formattedRecord as TData, ...prev]);
           }
         }
       )
